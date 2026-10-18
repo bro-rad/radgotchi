@@ -10,6 +10,8 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const os = require('os');
+const webAuth = require('./web-auth');
+const skillLoader = require('./skill-loader');
 
 let _deps = null;
 let httpServer = null;
@@ -72,7 +74,7 @@ function injectWebMode(html) {
         '<link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon_rg/favicon-32x32.png">',
         '<link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon_rg/favicon-16x16.png">',
         '<link rel="apple-touch-icon" sizes="180x180" href="/assets/favicon_rg/apple-touch-icon.png">',
-        '<link rel="manifest" href="/manifest.json">',
+        '<link rel="manifest" href="/manifest.json" crossorigin="use-credentials">',
         '<meta name="theme-color" content="#0a0c0a">',
         '<meta name="apple-mobile-web-app-capable" content="yes">',
         '<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">',
@@ -131,73 +133,22 @@ function serveChatHtml(res) {
 }
 
 function serveSettingsHtml(res) {
-    // Build settings HTML from llm module and inject web bridge
-    const { llm } = _deps;
-    let html = llm.buildSettingsHtml();
-
-    // Inject web bridge and viewport (cache-bust)
-    const bridgeScript = `<script src="/src/web/web-bridge.js?v=${Date.now()}"></script>`;
-    html = html.replace('</head>', bridgeScript + '\n</head>');
-    html = html.replace(
-        /<meta name="viewport"[^>]*>/,
-        '<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">'
-    );
-    // Add viewport if not present
-    if (!html.includes('viewport')) {
-        html = html.replace('</head>', '<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">\n</head>');
-    }
-
-    html = html.replace('<body>', '<body data-web-mode="true">');
-
-    // Relax CSP for web mode
-    html = html.replace(
-        /<meta http-equiv="Content-Security-Policy"[^>]*>/,
-        `<meta http-equiv="Content-Security-Policy" content="default-src 'self' blob: ws: wss:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; media-src 'self' blob:; img-src 'self' blob: data: https: http:; connect-src 'self' ws: wss: http: https:;">`
-    );
-
-    // Replace window.close() calls with navigation back to chat
-    html = html.replace(/window\.close\(\)/g, "window.location.href='/'");
-
-    // Replace Electron uploadPfp with a web-based file input approach
-    html = html.replace(
-        'async function uploadPfp() {',
-        `async function uploadPfp() {
-            if (document.body.dataset.webMode === 'true') {
-                // Web mode: use file input instead of Electron dialog
-                const input = document.createElement('input');
-                input.type = 'file';
-                input.accept = 'image/*';
-                input.onchange = (e) => {
-                    const file = e.target.files[0];
-                    if (!file) return;
-                    const reader = new FileReader();
-                    reader.onload = () => {
-                        operatorPfpImageUrl = reader.result;
-                        const previewEl = document.getElementById('operatorPfpPreview');
-                        previewEl.innerHTML = '';
-                        const pfpImg = document.createElement('img');
-                        pfpImg.src = operatorPfpImageUrl;
-                        pfpImg.alt = 'PFP';
-                        previewEl.appendChild(pfpImg);
-                    };
-                    reader.readAsDataURL(file);
-                };
-                input.click();
-                return;
-            }
-            // Electron mode below`
-    );
-
+    const html = fs.readFileSync(path.join(getProjectRoot(), 'settings.html'), 'utf-8');
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' });
-    res.end(html);
+    res.end(injectWebMode(html));
 }
 
-function serveManifest(res) {
+function serveManifest(req, res) {
+    // Home-screen apps can get their own cookie jar (iOS), so an authenticated
+    // install carries the token in its start URL to log itself in on launch.
+    const startUrl = webAuth.isAuthenticated(req)
+        ? `/?token=${encodeURIComponent(webAuth.getToken())}`
+        : '/';
     const manifest = {
         name: 'Radgotchi',
         short_name: 'Radgotchi',
         description: 'RAD TERMINAL — virtual pet chat',
-        start_url: '/',
+        start_url: startUrl,
         display: 'standalone',
         background_color: '#0a0c0a',
         theme_color: '#0a0c0a',
@@ -211,18 +162,33 @@ function serveManifest(res) {
     res.end(JSON.stringify(manifest));
 }
 
-function serveStatic(reqPath, res) {
+// Only the web UI's own directories are served. Everything else in the
+// project root (.env, .git, node_modules, skills) stays private.
+const STATIC_DIRS = ['src', 'assets'];
+
+function resolveStaticPath(reqPath) {
     const root = getProjectRoot();
+    let decoded;
+    try {
+        decoded = decodeURIComponent(reqPath);
+    } catch (_) {
+        return null;
+    }
+    if (decoded.includes('\0')) return null;
 
-    // Sanitise path to prevent directory traversal
-    const decoded = decodeURIComponent(reqPath);
-    const normalised = path.normalize(decoded).replace(/^(\.\.[\/\\])+/, '');
-    const filePath = path.join(root, normalised);
+    const filePath = path.resolve(root, '.' + path.posix.normalize('/' + decoded));
+    const relative = path.relative(root, filePath);
+    const [topDir, ...rest] = relative.split(path.sep);
+    if (!STATIC_DIRS.includes(topDir) || rest.length === 0) return null;
+    if (rest.some(segment => segment.startsWith('.'))) return null;
+    return filePath;
+}
 
-    // Must stay within project root
-    if (!filePath.startsWith(root)) {
-        res.writeHead(403);
-        res.end('Forbidden');
+function serveStatic(reqPath, res) {
+    const filePath = resolveStaticPath(reqPath);
+    if (!filePath) {
+        res.writeHead(404);
+        res.end('Not found');
         return;
     }
 
@@ -274,6 +240,11 @@ function acceptWebSocket(req, socket) {
         while (buffer.length >= 2) {
             const frame = decodeFrame(buffer);
             if (!frame) break;
+            if (frame.tooLarge) {
+                wsClients.delete(client);
+                socket.destroy();
+                return;
+            }
             buffer = buffer.slice(frame.totalLength);
 
             if (frame.opcode === 0x8) {
@@ -326,6 +297,8 @@ function decodeFrame(buf) {
         payloadLen = Number(buf.readBigUInt64BE(2));
         offset = 10;
     }
+
+    if (payloadLen > MAX_BODY_BYTES) return { tooLarge: true };
 
     const maskLen = masked ? 4 : 0;
     const totalLength = offset + maskLen + payloadLen;
@@ -561,6 +534,12 @@ async function handleInvoke(channel, args) {
             return llm.renameProfile(id, name);
         }
 
+        case 'reload-skills': {
+            skillLoader.loadSkills();
+            const names = skillLoader.getToolDefinitions().map(d => d.function.name);
+            return { success: true, count: names.length, names };
+        }
+
         case 'clear-pet-memory':
             petMemory.clearMemory();
             return { success: true };
@@ -771,22 +750,104 @@ function startPushEvents() {
 // Start / Stop
 // ═══════════════════════════════════════════════════════════════════════════
 
-function start(port = 7777) {
+// Large enough for a profile picture data URL, small enough that a stray
+// client can't exhaust memory.
+const MAX_BODY_BYTES = 16 * 1024 * 1024;
+
+// Read a JSON request body, answering 413 if it exceeds MAX_BODY_BYTES
+function readJsonBody(req, res, onBody) {
+    const chunks = [];
+    let size = 0;
+    req.on('data', chunk => {
+        size += chunk.length;
+        if (size > MAX_BODY_BYTES) {
+            res.writeHead(413, { 'Content-Type': 'application/json', 'Connection': 'close' });
+            res.end(JSON.stringify({ error: 'Request body too large' }));
+            req.destroy();
+            return;
+        }
+        chunks.push(chunk);
+    });
+    req.on('end', () => {
+        let body;
+        try {
+            body = JSON.parse(Buffer.concat(chunks).toString('utf-8'));
+        } catch (e) {
+            body = null;
+        }
+        if (!body || typeof body !== 'object') {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Expected a JSON object' }));
+            return;
+        }
+        onBody(body);
+    });
+}
+
+// Served without auth: the manifest and icons are fetched by the browser
+// and OS outside the page's normal cookie context.
+function isPublicPath(pathname) {
+    return pathname === '/manifest.json'
+        || pathname === '/favicon.ico'
+        || pathname.startsWith('/assets/favicon_rg/');
+}
+
+function sendUnauthorized(res) {
+    res.writeHead(401, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
+    res.end(`<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>body{background:#0a0c0a;color:#ff3344;font:14px monospace;padding:24px}</style></head>
+<body><h2>ACCESS DENIED</h2><p>Open the login URL printed in the Radgotchi console.</p></body></html>`);
+}
+
+function start(port = 7777, { host = '127.0.0.1' } = {}) {
+    webAuth.loadOrCreateToken(_deps.persistence.getUserDataPath());
+
+    // Shell and file-writing skills can be reached by anyone who can talk to
+    // the web server, so they stay off unless explicitly enabled.
+    const allowDangerous = process.env.RADGOTCHI_ALLOW_DANGEROUS_TOOLS === '1';
+    skillLoader.setDangerousToolsEnabled(allowDangerous);
+
     httpServer = http.createServer((req, res) => {
-        const url = new URL(req.url, `http://${req.headers.host}`);
+        const url = new URL(req.url, 'http://localhost');
         const pathname = url.pathname;
+
+        // ── Auth ─────────────────────────────────────────────────────────
+
+        // Exchange ?token= for a session cookie, then drop it from the URL
+        if (url.searchParams.has('token')) {
+            if (!webAuth.tokenMatches(url.searchParams.get('token'))) {
+                sendUnauthorized(res);
+                return;
+            }
+            url.searchParams.delete('token');
+            res.writeHead(302, {
+                'Set-Cookie': webAuth.sessionCookie(),
+                'Location': pathname + url.search,
+                'Cache-Control': 'no-store',
+            });
+            res.end();
+            return;
+        }
+
+        if (!isPublicPath(pathname) && !webAuth.isAuthenticated(req)) {
+            sendUnauthorized(res);
+            return;
+        }
+
+        if (req.method !== 'GET' && !webAuth.isSameOrigin(req)) {
+            res.writeHead(403);
+            res.end('Forbidden');
+            return;
+        }
 
         // ── HTTP API fallback (when WebSocket is unavailable) ────────────
 
         // POST /api/invoke — generic invoke handler
         if (pathname === '/api/invoke' && req.method === 'POST') {
-            let body = '';
-            req.on('data', chunk => { body += chunk; });
-            req.on('end', async () => {
+            readJsonBody(req, res, async ({ channel, args }) => {
                 try {
-                    const { channel, args } = JSON.parse(body);
                     const result = await handleInvoke(channel, args);
-                    res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
                     res.end(JSON.stringify(result));
                 } catch (e) {
                     res.writeHead(500, { 'Content-Type': 'application/json' });
@@ -798,11 +859,8 @@ function start(port = 7777) {
 
         // POST /api/send — fire-and-forget handler
         if (pathname === '/api/send' && req.method === 'POST') {
-            let body = '';
-            req.on('data', chunk => { body += chunk; });
-            req.on('end', () => {
+            readJsonBody(req, res, ({ channel, args }) => {
                 try {
-                    const { channel, args } = JSON.parse(body);
                     // Use a virtual client that discards WS sends
                     handleSend({ socket: null }, channel, args);
                     res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -817,11 +875,8 @@ function start(port = 7777) {
 
         // POST /api/chat-stream — SSE streaming for chat messages
         if (pathname === '/api/chat-stream' && req.method === 'POST') {
-            let body = '';
-            req.on('data', chunk => { body += chunk; });
-            req.on('end', () => {
+            readJsonBody(req, res, ({ messages }) => {
                 try {
-                    const { messages } = JSON.parse(body);
                     const { llm, sleepWork } = _deps;
                     if (sleepWork.getIsSleeping()) sleepWork.stopSleepMode();
 
@@ -829,7 +884,6 @@ function start(port = 7777) {
                         'Content-Type': 'text/event-stream',
                         'Cache-Control': 'no-cache',
                         'Connection': 'keep-alive',
-                        'Access-Control-Allow-Origin': '*',
                     });
 
                     const fakeEvent = {
@@ -850,17 +904,6 @@ function start(port = 7777) {
                     res.end(JSON.stringify({ error: e.message }));
                 }
             });
-            return;
-        }
-
-        // CORS preflight for API endpoints
-        if (req.method === 'OPTIONS' && pathname.startsWith('/api/')) {
-            res.writeHead(204, {
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'POST, OPTIONS',
-                'Access-Control-Allow-Headers': 'Content-Type',
-            });
-            res.end();
             return;
         }
 
@@ -941,7 +984,7 @@ document.head.appendChild(bridgeScript);
 
         // Web app manifest
         if (pathname === '/manifest.json') {
-            serveManifest(res);
+            serveManifest(req, res);
             return;
         }
 
@@ -957,25 +1000,42 @@ document.head.appendChild(bridgeScript);
 
     // WebSocket upgrade
     httpServer.on('upgrade', (req, socket, head) => {
-        if (req.url === '/ws') {
+        if (req.url === '/ws' && webAuth.isSameOrigin(req) && webAuth.isAuthenticated(req)) {
             acceptWebSocket(req, socket);
         } else {
             socket.destroy();
         }
     });
 
-    httpServer.listen(port, '0.0.0.0', () => {
-        const addresses = getLocalAddresses();
+    httpServer.listen(port, host, () => {
+        const query = `/?token=${encodeURIComponent(webAuth.getToken())}`;
+        const isLoopback = host === '127.0.0.1' || host === 'localhost' || host === '::1';
+        const isWildcard = host === '0.0.0.0' || host === '::';
         console.log('');
         console.log('═══════════════════════════════════════════════════');
         console.log('  RADGOTCHI WEB MODE — RAD TERMINAL');
         console.log('═══════════════════════════════════════════════════');
-        console.log(`  Local:     http://localhost:${port}`);
-        for (const addr of addresses) {
-            console.log(`  Network:   http://${addr}:${port}`);
+        if (isLoopback || isWildcard) {
+            console.log(`  Local:     http://localhost:${port}${query}`);
+        }
+        if (isWildcard) {
+            for (const addr of getLocalAddresses()) {
+                console.log(`  Network:   http://${addr}:${port}${query}`);
+            }
+        } else if (!isLoopback) {
+            console.log(`  Network:   http://${host}:${port}${query}`);
         }
         console.log('');
-        console.log('  Open the URL above on your phone via Tailscale');
+        if (isLoopback) {
+            console.log('  Listening on localhost only. Use --host=0.0.0.0');
+            console.log('  (or a Tailscale IP) to reach it from your phone.');
+        } else {
+            console.log('  Open a login URL above on your phone via Tailscale');
+        }
+        console.log('  Treat these URLs like passwords.');
+        if (allowDangerous) {
+            console.log('  WARNING: shell/file-write skills are ENABLED.');
+        }
         console.log('═══════════════════════════════════════════════════');
         console.log('');
     });
@@ -1006,4 +1066,4 @@ function getLocalAddresses() {
     return addrs;
 }
 
-module.exports = { init, start, stop, wsBroadcast };
+module.exports = { init, start, stop, wsBroadcast, resolveStaticPath };

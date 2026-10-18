@@ -276,6 +276,40 @@ For environments with GPU constraints (VM, remote session, compatibility issues)
 npm run start:safe
 ```
 
+### Headless / Remote Web Mode
+
+Run Radgotchi over SSH without X11, Wayland, or a desktop session:
+
+```bash
+npm run start:headless
+```
+
+The Node-only server listens on `127.0.0.1:7777` by default. To reach it from
+your phone, bind it to all interfaces (or a single Tailscale IP):
+
+```bash
+npm run start:headless -- --host=0.0.0.0
+npm run start:headless -- --host=0.0.0.0 --port=3000
+```
+
+On startup the console prints login URLs of the form
+`http://<host>:7777/?token=...`. Opening one sets a session cookie, so you only
+need it once per browser. The token is stored in `web-token` inside the data
+directory; delete that file (or set `RADGOTCHI_WEB_TOKEN`) to rotate it. Treat
+the login URL like a password.
+
+For a detached SSH session:
+
+```bash
+nohup npm run start:headless -- --host=0.0.0.0 > radgotchi-web.log 2>&1 &
+```
+
+The `run_command` and `create_file` skills are disabled in web mode, because
+anyone with the token could otherwise run shell commands on the host. Set
+`RADGOTCHI_ALLOW_DANGEROUS_TOOLS=1` to enable them anyway. Even with the token,
+keep web mode behind Tailscale or a trusted LAN; do not forward its port
+publicly.
+
 ---
 
 ## Operational Parameters
@@ -541,16 +575,19 @@ Radgotchi follows standard Electron architecture with clear separation between m
 ```
 radgotchi/
 ├── main.js           # Main process entry point
+├── headless.js       # Node-only web mode entry point
 ├── preload.js        # Secure bridge (main window)
 ├── preload-chat.js   # Secure bridge (terminal window)
 ├── index.html        # Primary interface
 ├── chat.html         # SIGINT Terminal
 ├── package.json      # Project manifest
 ├── src/
-│   ├── main/         # Main process modules
+│   ├── main/         # Main process modules (bootstrap.js wires them together)
 │   ├── renderer/     # Renderer ES modules
 │   ├── chat/         # Chat window ES modules
+│   ├── web/          # Browser bridge for web mode
 │   └── styles/       # All CSS (styles.css, chat-window.css)
+├── test/             # node:test suites (npm test)
 └── assets/           # Sprite library (25+)
 ```
 
@@ -566,6 +603,7 @@ Stored in user data directory:
 | `xp-data.json` | Progression state, streaks |
 | `chat-data.json` | Message history |
 | `milestones.json` | Achievement records |
+| `web-token` | Web mode login token |
 
 ---
 

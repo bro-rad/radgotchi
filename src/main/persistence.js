@@ -22,6 +22,10 @@ function getAssetPath(...paths) {
     return path.join(__dirname, '..', '..', 'assets', ...paths);
 }
 
+function getUserDataPath() {
+    return _app.getPath('userData');
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // Atomic Write Helper
 // ═══════════════════════════════════════════════════════════════════════════
@@ -154,6 +158,12 @@ function getWindowState(windowName, defaults) {
     const saved = windowStates[windowName];
     if (!saved) return defaults;
 
+    // This store also contains non-window state (network discovery, daily
+    // contracts, etc.). It has no display bounds and must remain usable by the
+    // Node-only headless server, where Electron's screen API is unavailable.
+    const hasBounds = ['x', 'y', 'width', 'height'].every(key => Number.isFinite(saved[key]));
+    if (!hasBounds || !_screen) return { ...defaults, ...saved };
+
     // Validate bounds are still on a visible display
     const displays = _screen.getAllDisplays();
     const isVisible = displays.some(display => {
@@ -166,12 +176,16 @@ function getWindowState(windowName, defaults) {
 
     if (!isVisible) return defaults;
 
-    return ensureBoundsOnDisplay({
-        x: saved.x,
-        y: saved.y,
-        width: saved.width || defaults.width,
-        height: saved.height || defaults.height
-    });
+    return {
+        ...defaults,
+        ...saved,
+        ...ensureBoundsOnDisplay({
+            x: saved.x,
+            y: saved.y,
+            width: saved.width || defaults.width,
+            height: saved.height || defaults.height
+        })
+    };
 }
 
 function ensureBoundsOnDisplay(bounds) {
@@ -360,6 +374,7 @@ function saveArcadeDataToDisk(dataToSave) {
 module.exports = {
     init,
     getAssetPath,
+    getUserDataPath,
     // XP data
     loadXpDataFromDisk,
     saveXpDataToDisk,

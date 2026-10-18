@@ -3,6 +3,7 @@ name: run_command
 description: Run a shell command and return its output. Do NOT run destructive commands.
 icon: ⚙️
 timeout: 20s
+dangerous: true
 parameters:
   command:
     type: string

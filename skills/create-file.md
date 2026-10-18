@@ -2,6 +2,7 @@
 name: create_file
 description: Create or overwrite a file on the local filesystem with the given content.
 icon: 📝
+dangerous: true
 parameters:
   path:
     type: string

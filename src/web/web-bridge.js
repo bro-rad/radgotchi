@@ -69,6 +69,7 @@
         ws.onclose = () => {
             connected = false;
             console.log('[WebBridge] Disconnected, reconnecting...');
+            checkStillAuthorized();
             scheduleReconnect();
         };
 
@@ -76,6 +77,16 @@
             console.error('[WebBridge] WebSocket error');
             ws.close();
         };
+    }
+
+    // A rejected WebSocket handshake looks like any other disconnect. If the
+    // server is up but our session cookie is no longer accepted (token
+    // rotated, cookies cleared), reload so the login page shows instead of
+    // reconnecting forever.
+    function checkStillAuthorized() {
+        fetch(window.location.href, { method: 'HEAD', cache: 'no-store' })
+            .then(res => { if (res.status === 401) window.location.reload(); })
+            .catch(() => { /* server unreachable — keep retrying */ });
     }
 
     function scheduleReconnect() {
@@ -253,7 +264,17 @@
         chatMood: (mood) => send('chat-mood', mood),
 
         // Chat ready event
-        onChatReady: (cb) => on('chat-ready', cb),
+        // Desktop sends chat-ready once per window. Here it arrives from the
+        // embedded initial state AND on every WebSocket (re)connect, so only
+        // the first one runs the chat's startup.
+        onChatReady: (cb) => {
+            let fired = false;
+            on('chat-ready', (data) => {
+                if (fired) return;
+                fired = true;
+                cb(data);
+            });
+        },
 
         // Color
         onSetColor: (cb) => on('set-color', cb),
@@ -351,6 +372,7 @@
         getPetMemoryFacts: () => invoke('get-pet-memory-facts'),
         removePetMemoryFact: (index) => invoke('remove-pet-memory-fact', { index }),
         addPetMemoryFact: (fact) => invoke('add-pet-memory-fact', { fact }),
+        reloadSkills: () => invoke('reload-skills'),
         openSettings: () => { window.location.href = '/settings'; },
 
         // System Metrics & LLM Config

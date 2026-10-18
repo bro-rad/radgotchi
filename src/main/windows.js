@@ -5,6 +5,7 @@ const path = require('path');
 const os = require('os');
 const { broadcastToWindows: _broadcastToWindows } = require('./broadcast');
 const skillLoader = require('./skill-loader');
+const settingsWindow = require('./settings-window');
 
 let mainWindow = null;
 let chatWindow = null;
@@ -50,6 +51,7 @@ function init(deps) {
     _responseTimes = deps.responseTimes;
     _saveChatData = deps.saveChatData;
     _addActivityLogEntry = deps.addActivityLogEntry;
+    settingsWindow.init({ persistence: _persistence, getMainWindow });
 }
 
 function getMainWindow() { return mainWindow; }
@@ -504,7 +506,7 @@ function registerChatIpc() {
     ipcMain.on('close-chat', () => {
         if (chatWindow) { chatWindow.close(); chatWindow = null; }
     });
-    ipcMain.on('open-settings', () => _llm.showChatSettingsDialog());
+    ipcMain.on('open-settings', () => settingsWindow.show());
 
     ipcMain.on('chat-mood', (event, mood) => {
         if (mainWindow && mainWindow.webContents) mainWindow.webContents.send('chat-mood', mood);
@@ -518,7 +520,7 @@ function registerChatIpc() {
         const spriteState = _llm.getSpriteState();
         spriteState.color = color;
         if (chatWindow && chatWindow.webContents) chatWindow.webContents.send('set-color', color);
-        _llm.syncColorToSettingsWindow(color);
+        settingsWindow.syncColor(color);
     });
 
     ipcMain.on('sound-played', (event, soundName) => {
@@ -614,11 +616,6 @@ function createTray() {
 
     tray = new Tray(trayIcon);
 
-    const colorSubmenu = _llm.colorPresets.map(preset => ({
-        label: preset.label,
-        click: () => _llm.broadcastColor(preset.color)
-    }));
-
     const contextMenu = Menu.buildFromTemplate([
         { label: 'Radgotchi', enabled: false },
         { type: 'separator' },
@@ -646,7 +643,7 @@ function createTray() {
             }
         },
         { label: 'RAD Terminal', click: () => createChatWindow() },
-        { label: 'Chat Settings', click: () => _llm.showChatSettingsDialog() },
+        { label: 'Chat Settings', click: () => settingsWindow.show() },
         { type: 'separator' },
         {
             label: 'Show/Hide',

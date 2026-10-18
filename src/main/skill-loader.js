@@ -6,6 +6,8 @@ const vm = require('vm');
 
 let skillsDir = null;
 let loadedSkills = new Map();  // name -> { definition, execute, icon }
+// Skills marked `dangerous: true` (shell, file writes) are only exposed when enabled
+let dangerousToolsEnabled = true;
 
 /**
  * Initialise the skill loader.
@@ -278,6 +280,7 @@ function loadSkills() {
                 execute,
                 icon: meta.icon || '🔧',
                 file,
+                dangerous: meta.dangerous === 'true',
                 // Per-skill timeout (ms) from frontmatter, default 30s.
                 // Set higher for skills that hit slow upstreams (e.g. web_search).
                 timeoutMs: parseTimeout(meta.timeout, 30000),
@@ -296,7 +299,13 @@ function loadSkills() {
  * Returns the OpenAI-format tool definitions array for all loaded skills.
  */
 function getToolDefinitions() {
-    return Array.from(loadedSkills.values()).map(s => s.definition);
+    return Array.from(loadedSkills.values())
+        .filter(s => dangerousToolsEnabled || !s.dangerous)
+        .map(s => s.definition);
+}
+
+function setDangerousToolsEnabled(enabled) {
+    dangerousToolsEnabled = !!enabled;
 }
 
 /**
@@ -323,6 +332,9 @@ async function executeToolCall(name, args) {
     }
     if (!skill.execute) {
         return { error: `Skill '${name}' has no handler` };
+    }
+    if (skill.dangerous && !dangerousToolsEnabled) {
+        return { error: `Skill '${name}' is disabled in this mode` };
     }
     const timeoutMs = skill.timeoutMs || 30000;
     try {
@@ -353,6 +365,7 @@ module.exports = {
     loadSkills,
     getToolDefinitions,
     getToolIcons,
+    setDangerousToolsEnabled,
     executeToolCall,
     getSkillCount,
 };

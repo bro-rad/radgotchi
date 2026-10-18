@@ -17,6 +17,12 @@ npm start
 
 # Run with GPU disabled (for VMs/remote sessions)
 npm run start:safe
+
+# Run the web UI without Electron
+npm run start:headless
+
+# Run the test suite (plain Node, no Electron needed)
+npm test
 ```
 
 ## Project Structure
@@ -24,6 +30,8 @@ npm run start:safe
 | Directory/File | Purpose |
 |------|--------|
 | `main.js` | Electron main process entry point |
+| `headless.js` | Node-only web mode entry point |
+| `src/main/bootstrap.js` | Module wiring and lifecycle shared by both entry points |
 | `preload.js` | Secure IPC bridge (main window) |
 | `preload-chat.js` | Secure IPC bridge (chat window) |
 | `src/main/` | Main process modules (persistence, networking, XP, etc.) |
@@ -32,6 +40,7 @@ npm run start:safe
 | `src/styles/` | All CSS (styles.css, chat-window.css) |
 | `index.html` | App shell |
 | `chat.html` | RAD Terminal window |
+| `test/` | `node:test` suites (`npm test`) |
 
 ## Adding Features
 
@@ -86,7 +95,7 @@ npm run start:safe
 
 ## Submitting Changes
 
-1. Test your changes thoroughly
+1. Run `npm test` and test your changes thoroughly
 2. Update README if adding user-facing features
 3. Commit with descriptive messages:
    ```

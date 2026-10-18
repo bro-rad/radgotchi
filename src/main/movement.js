@@ -1,6 +1,13 @@
 'use strict';
 
-const { powerMonitor } = require('electron');
+// `require('electron')` returns the executable path under plain Node and may be
+// absent entirely in minimal headless installs. Only desktop idle detection
+// needs powerMonitor, so keep it optional for the web server.
+let powerMonitor = null;
+try {
+    const electron = require('electron');
+    if (electron && typeof electron === 'object') powerMonitor = electron.powerMonitor;
+} catch (_) {}
 const { broadcastToWindows } = require('./broadcast');
 
 // Movement modes: 'none', 'bounce', 'follow', 'wander'
@@ -362,7 +369,7 @@ function sendSpritePosition() {
 
 // ── Idle Detection ──
 function startIdleDetection() {
-    if (idleCheckInterval) return;
+    if (idleCheckInterval || !powerMonitor) return;
 
     idleCheckInterval = setInterval(() => {
         const mainWindow = _getMainWindow();

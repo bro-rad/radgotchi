@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob: data:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://radbro.xyz https://schizoposters.xyz; img-src 'self' blob: data: https: http:;">
+    <title>COMMS CONFIG</title>
+    <link rel="stylesheet" href="src/styles/settings.css">
+</head>
+<body>
+    <div class="terminal-container">
+        <div class="terminal-header">
+            <div class="header-left">
+                <span class="classification">RB//WR</span>
+                <span class="terminal-title">COMMS CONFIG</span>
+            </div>
+            <div class="header-right">
+                <span class="status-indicator">█ ENCRYPTED</span>
+                <button class="close-btn" onclick="closeSettings()">×</button>
+            </div>
+        </div>
+        <div class="content-area">
+            <div class="field checkbox-field">
+                <input type="checkbox" id="enabled">
+                <label for="enabled">ENABLE COMMS LINK (REQUIRES LOCAL LLM)</label>
+            </div>
+            <div class="section-header">OPERATOR IDENTITY</div>
+            <div class="identity-row">
+                <div class="identity-left">
+                    <div class="field">
+                        <label>CALLSIGN</label>
+                        <input type="text" id="operatorName" placeholder="OPERATOR">
+                    </div>
+                </div>
+                <div class="identity-right">
+                    <div class="pfp-preview-large" id="operatorPfpPreview" onclick="uploadPfp()" title="Click to upload">
+                        <span class="pfp-preview-placeholder">?</span>
+                    </div>
+                    <div style="display:flex; gap:4px;">
+                        <button type="button" class="pfp-upload-btn" onclick="uploadPfp()">UPLOAD</button>
+                        <button type="button" class="pfp-clear-btn" onclick="clearPfp()">CLR</button>
+                    </div>
+                </div>
+            </div>
+            <div class="section-header">CONNECTION</div>
+            <div class="profile-bar">
+                <label>PROFILE</label>
+                <select id="profileSelect"><option value="">&mdash; none &mdash;</option></select>
+                <button type="button" class="profile-btn" onclick="newProfile()">NEW</button>
+                <button type="button" class="profile-btn" onclick="overwriteProfile()">SAVE</button>
+                <button type="button" class="profile-btn danger" onclick="deleteCurrentProfile()">DEL</button>
+            </div>
+            <div id="profileNamePrompt" class="profile-name-prompt" style="display:none;">
+                <input type="text" id="profileNameInput" placeholder="Profile name..." maxlength="40">
+                <button type="button" class="profile-btn" onclick="confirmNewProfile()">OK</button>
+                <button type="button" class="profile-btn" onclick="cancelNewProfile()">ESC</button>
+            </div>
+            <div class="field">
+                <label>ENDPOINT URL</label>
+                <input type="text" id="apiUrl" placeholder="http://localhost:11434/v1/chat/completions">
+                <div class="hint">OpenAI-compatible (Ollama, LM Studio, LocalAI)</div>
+            </div>
+            <div class="field-grid-2">
+                <div>
+                    <label>MODEL</label>
+                    <input type="text" id="model" placeholder="llama2">
+                </div>
+                <div>
+                    <label>API KEY</label>
+                    <input type="password" id="apiKey" placeholder="optional">
+                </div>
+            </div>
+            <div class="section-header">PERSONALITY</div>
+            <div class="field">
+                <label>SYSTEM DIRECTIVE</label>
+                <textarea id="systemPrompt" rows="3"></textarea>
+            </div>
+            <div class="section-header">MEMORY</div>
+            <div class="field checkbox-field">
+                <input type="checkbox" id="memoryEnabled">
+                <label for="memoryEnabled">ENABLE LONG-TERM MEMORY</label>
+            </div>
+            <div class="hint" style="margin-bottom:6px;">Remembers facts across sessions (<span id="memoryCount">0</span> stored)</div>
+            <div class="inline-actions">
+                <button type="button" class="pill-btn" onclick="viewMemory()" style="border-color:var(--term-cyan);color:var(--term-cyan);">VIEW</button>
+                <button type="button" class="pill-btn btn-clear-memory" onclick="clearMemory()" style="border-color:var(--term-red);color:var(--term-red);">WIPE</button>
+            </div>
+            <!-- Memory viewer modal -->
+            <div id="memoryModal" style="display:none;position:fixed;inset:0;z-index:999;background:rgba(0,0,0,0.85);backdrop-filter:blur(4px);">
+                <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:90%;max-width:460px;max-height:80vh;display:flex;flex-direction:column;border:1px solid var(--term-cyan);background:var(--term-bg);box-shadow:0 0 30px rgba(0,212,255,0.15);">
+                    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-bottom:1px solid var(--term-border);background:linear-gradient(180deg,#0f120f,#080a08);">
+                        <span style="font-size:10px;letter-spacing:2px;color:var(--term-cyan);text-shadow:0 0 8px var(--term-cyan);">◆ MEMORY BANK</span>
+                        <button onclick="closeMemoryModal()" style="width:20px;height:20px;padding:0;font-size:12px;border:1px solid var(--term-dim);color:var(--term-dim);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;">×</button>
+                    </div>
+                    <div id="memoryList" style="flex:1;overflow-y:auto;padding:8px;min-height:60px;max-height:60vh;"></div>
+                    <div style="padding:6px 12px;border-top:1px solid var(--term-border);text-align:right;">
+                        <button onclick="closeMemoryModal()" style="width:auto;padding:6px 16px;font-size:9px;">CLOSE</button>
+                    </div>
+                </div>
+            </div>
+            <div class="section-header">TOOLS</div>
+            <div class="field checkbox-field">
+                <input type="checkbox" id="toolsEnabled">
+                <label for="toolsEnabled">ENABLE TOOL USE (SEARCH, FILES, SHELL)</label>
+            </div>
+            <div class="hint" style="margin-bottom:6px;">Requires a model that supports tool calling.</div>
+            <div class="inline-actions">
+                <button type="button" id="reloadSkillsBtn" class="pill-btn" onclick="reloadSkills()" style="border-color:var(--term-cyan);color:var(--term-cyan);">RELOAD SKILLS</button>
+                <span id="skillsStatus" style="font-size:9px;color:var(--term-dim);"></span>
+            </div>
+        </div>
+        <div class="button-row">
+            <button class="btn-cancel" onclick="closeSettings()">ABORT</button>
+            <button class="btn-save" onclick="saveSettings()">COMMIT</button>
+        </div>
+    </div>
+    <script src="src/settings/settings.js"></script>
+</body>
+</html>

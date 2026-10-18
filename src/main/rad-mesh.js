@@ -2,6 +2,7 @@
 
 const os = require('os');
 const dgram = require('dgram');
+const crypto = require('node:crypto');
 const { EventEmitter } = require('events');
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -23,6 +24,7 @@ const { EventEmitter } = require('events');
 const MESH_CONFIG = {
     PORT: 47823,
     PROTOCOL_VERSION: 'SIGINT-1.0',
+    SKIP_INTERFACE_PATTERNS: ['docker', 'veth', 'virbr', 'br-', 'tailscale', 'tun', 'tap', 'wg'],
 
     // Heartbeat timing
     HEARTBEAT_INTERVAL_MS: 3000,        // broadcast presence every 3s (was 5s)
