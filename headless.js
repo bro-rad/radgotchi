@@ -10,6 +10,19 @@ const path = require('path');
 
 dns.setDefaultResultOrder('ipv4first');
 
+// Branch before requiring bootstrap: monitoring must not load skills, LLM,
+// discovery, mesh or persisted legacy state, even when restoration is enabled.
+if (process.env.RADGOTCHI_MONITORING_MODE !== undefined && process.env.RADGOTCHI_MONITORING_MODE !== '1') {
+    console.error('[Monitoring] Invalid mode; use 1 or leave unset');
+    process.exitCode = 2;
+} else if (process.env.RADGOTCHI_MONITORING_MODE === '1') {
+    try {
+        require('./src/main/monitoring-server').startMonitoringFromEnv(process.env);
+    } catch {
+        console.error('[Monitoring] Invalid configuration; server not started');
+        process.exitCode = 2;
+    }
+} else {
 const bootstrap = require('./src/main/bootstrap');
 
 let webArgs;
@@ -73,3 +86,4 @@ process.on('SIGINT', () => shutdown('SIGINT'));
 process.on('SIGTERM', () => shutdown('SIGTERM'));
 
 start();
+}

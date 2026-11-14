@@ -1,0 +1,33 @@
+/* Monitoring-only layout adaptation of the original RAD TERMINAL web surface.
+   Artwork, palette, font, glow, scanlines, header, badges and node components
+   come from the unmodified upstream chat-window.css (MIT). */
+body[data-web-mode="true"] .terminal-container {
+  grid-template-rows: auto auto auto minmax(84px, var(--tama-h, 20vh)) minmax(0, 1fr) auto auto auto;
+  grid-template-areas: "header header header" "info info info" "level level level" "needs sprite stats" "network network network" "activities activities activities" "status status status" "ctrls ctrls ctrls";
+}
+@media (max-width: 340px) {
+  body[data-web-mode="true"] .terminal-container {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: auto auto auto auto minmax(144px, 12vh) minmax(0, 1fr) auto auto auto;
+    grid-template-areas: "header header" "info info" "level level" "needs stats" "sprite sprite" "network network" "activities activities" "status status" "ctrls ctrls";
+  }
+}
+body[data-web-mode="true"] .observation-status { grid-area: status; }
+#companion-activities { grid-area: activities; min-width: 0; }
+#packages { display: flex; flex-direction: column; min-height: 0; max-height: none; overflow: hidden; }
+#packages .network-header { cursor: default; flex-shrink: 0; }
+#packages-heading { font-size: inherit; }
+#package-list { list-style: none; max-height: none; min-height: 0; overflow-y: auto; }
+#package-list .node-top-row { flex-wrap: wrap; }
+#package-list .node-id { overflow-wrap: anywhere; }
+#package-list .node-info { user-select: text; }
+#package-list .node-operator { white-space: normal; overflow-wrap: anywhere; }
+.package-states { list-style: none; display: flex; flex-wrap: wrap; gap: 4px 12px; color: var(--term-green); font-size: 9px; }
+.observation-status { color: var(--term-amber); }
+#freshness { overflow-wrap: anywhere; }
+#login-link { color: var(--term-green); text-decoration: none; }
+a:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--term-cyan); outline-offset: -2px; }
+.skip-link { position: fixed; top: -100px; left: 8px; z-index: 1001; background: var(--term-bg); color: var(--term-green); padding: 8px; }
+.skip-link:focus { top: 8px; }
+[hidden] { display: none !important; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }

@@ -4,6 +4,8 @@ node_modules/
 # Build output
 dist/
 out/
+releases/**/*.tar
+releases/**/deployment-private/
 
 # OS files
 .DS_Store
@@ -23,6 +25,11 @@ npm-debug.log*
 # Environment
 .env
 .env.local
+
+# Local historical qualification evidence (retain on disk; do not stage)
+/packaging/verification.json
+/packaging/runtime-verification.json
+/packaging/deployment-preflight.md
 
 # Generated files
 *.tsbuildinfo

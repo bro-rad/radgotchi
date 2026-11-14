@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>RAD TERMINAL · DAppNode</title>
+  <link rel="stylesheet" href="/src/styles/chat-window.css">
+  <link rel="stylesheet" href="/src/styles/monitoring.css">
+  <link rel="stylesheet" href="/src/styles/companion-interactions.css">
+  <link rel="stylesheet" href="/src/styles/companion-activities.css">
+  <script src="/src/web/monitoring-panel.js" defer></script>
+  <script src="/src/web/companion-interactions.js" defer></script>
+  <script src="/src/web/companion-activities.js" defer></script>
+  <link rel="stylesheet" href="/src/styles/companion-arcade.css">
+  <script src="/src/web/companion-transport.js" defer></script>
+  <script src="/src/web/companion-arcade.js" defer></script>
+  <script src="/src/web/companion-bootstrap.js" defer></script>
+  <script src="/src/web/companion-audio.js" defer></script>
+  <script src="/src/web/companion-audio-bootstrap.js" defer></script>
+</head>
+<body data-web-mode="true">
+  <!-- Visual shell: upstream chat.html and unmodified chat-window.css.
+       Radgotchi by Tyler (itsTylerIRL/radgotchi), Copyright © 2026, MIT License.
+       No chat, Electron bridge, mesh, configuration or executable controls. -->
+  <a class="skip-link" href="#packages">Skip to packages</a>
+  <main class="terminal-container">
+    <header class="terminal-header">
+      <div class="header-left"><span class="classification">RB//WR</span><h1 class="terminal-title">RAD TERMINAL</h1></div>
+      <div class="header-right"><span id="companion-audio"></span><span class="status-indicator" title="Read-only package observations; not health assessments">READ ONLY</span><a class="header-btn" id="login-link" href="/login" hidden>SIGN IN</a></div>
+    </header>
+    <div class="info-bar"><span>DAPPNODE</span><span id="source-status">Source: unknown</span><span id="freshness">Observed: — · Last success: —</span></div>
+    <div class="level-bar"><span class="level-badge">PACKAGES</span><span class="rank-badge" title="Service and container identities are unavailable. Reported running states do not establish health.">OBSERVATIONS</span></div>
+    <div class="needs-bar" aria-label="Observation counts">
+      <div class="need-item"><span class="need-label">GROUPS</span><span class="need-value" id="package-count">—</span></div>
+      <div class="need-item"><span class="need-label">ROWS</span><span class="need-value" id="reported-rows">—</span></div>
+    </div>
+    <div class="web-sprite-container" id="web-sprite-container" title="Radgotchi companion; not a health indicator"><img id="web-sprite" src="/assets/gotchi/AWAKE.png" alt="Radgotchi" draggable="false"></div>
+    <div class="stats-panel"><div class="stats-row"><div class="stat-item"><span class="stat-label">REFRESH</span><span class="stat-value">30s</span></div><div class="stat-item"><span class="stat-label">SCOPE</span><span class="stat-value">PACKAGE</span></div></div></div>
+    <section id="packages" class="network-bar" tabindex="-1" aria-labelledby="packages-heading">
+      <div class="network-header"><h2 class="network-title" id="packages-heading">PACKAGE OBSERVATIONS</h2><button class="header-btn" id="feed-selection" type="button" aria-pressed="true" title="Show overall feed">FEED</button><span class="network-node-count" title="Versions and state counts as reported; no inferred container identities">GROUPED</span></div>
+      <ul id="package-list" class="network-nodes"><li class="network-empty">No observations</li></ul>
+    </section>
+    <div id="companion-activities"></div>
+    <div id="companion-arcade"></div>
+    <div class="info-bar observation-status"><span id="request-status" role="status" aria-live="polite" aria-atomic="true">Connecting…</span><noscript>JavaScript required</noscript></div>
+    <footer class="controls-bar"><span class="control-label" title="Radgotchi by Tyler (itsTylerIRL/radgotchi), MIT License">RADGOTCHI · MIT</span></footer>
+  </main>
+</body>
+</html>

@@ -1,0 +1,53 @@
+/* Narrow, local-only extension of the original Radgotchi pomodoro components.
+ * Load after the unmodified chat-window.css. No artwork or monitoring overrides. */
+.rg-activities {
+  flex-shrink: 0;
+  font-family: var(--font-mono, monospace);
+  color: var(--term-green, #00ff88);
+  border-bottom: 1px solid var(--term-border, #1a3a2a);
+}
+.rg-activities h2 {
+  margin: 0;
+  padding: 6px 12px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+.rg-activities .pomodoro-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.rg-activities .pomo-btn {
+  min-height: 32px;
+  font-size: 10px;
+}
+.rg-activities .pomo-btn:disabled {
+  opacity: .5;
+  cursor: default;
+}
+.rg-activities .pomo-btn:focus-visible {
+  outline: 2px solid var(--term-amber, #ffb000);
+  outline-offset: 3px;
+}
+.rg-activities .pomo-count {
+  font-size: 10px;
+  color: var(--term-green, #00ff88);
+}
+.rg-activities-status {
+  margin: 0;
+  padding: 4px 12px;
+  min-height: 1em;
+  font-size: 10px;
+  color: var(--term-amber, #ffb000);
+}
+@media (prefers-reduced-motion: reduce) {
+  .rg-activities,
+  .rg-activities *,
+  .rg-activities *::before,
+  .rg-activities *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}

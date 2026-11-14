@@ -310,6 +310,28 @@ anyone with the token could otherwise run shell commands on the host. Set
 keep web mode behind Tailscale or a trusted LAN; do not forward its port
 publicly.
 
+### Dappnode Companion
+
+The opt-in `RADGOTCHI_MONITORING_MODE=1` path keeps the original RAD TERMINAL
+artwork and style while adding read-only package observations and a companion.
+It is separate from the desktop and legacy headless features described above.
+
+- **Access:** one owner token through `/login`, with a configured HTTPS origin.
+- **Companion:** original coinflip, blackjack, shop and progression persist in
+  the companion volume; browser sessions share one owner, not separate players.
+- **Observations:** grouped package states only—not host CPU, identified services
+  or application health. Games never change monitoring facts.
+- **Local extras:** optional muted-by-default audio and a Pomodoro timer; local
+  focus completion does not award server XP.
+- **Boundaries:** chat, NATS and RAD MESH are not wired into this path. Abrupt
+  termination can leave a writer lease that fails closed and needs manual offline
+  recovery; never delete companion state to bypass it.
+
+Version **0.1.5** has been independently verified live; that does not qualify
+later source changes. See [integration](DAPPNODE-INTEGRATION.md),
+[package setup](packaging/README.md) and [local checks](MONITORING-LOCAL.md).
+Offline recovery tooling is tracked in [issue #1](https://github.com/bro-rad/radgotchi/issues/1).
+
 ---
 
 ## Operational Parameters

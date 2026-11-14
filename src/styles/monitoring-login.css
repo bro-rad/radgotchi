@@ -1,0 +1,14 @@
+/* Narrow login layout; original terminal palette, scanlines and sprite filter stay upstream. */
+.monitoring-login .terminal-container { overflow-y: auto; }
+.monitoring-login .terminal-header { cursor: default; -webkit-app-region: no-drag; }
+.login-state { color: var(--term-amber); font-size: 10px; letter-spacing: 1px; }
+.login-main { width: min(100%, 380px); margin: auto; padding: 32px 24px; color: var(--term-green); }
+.login-main h1 { font-size: 16px; font-weight: normal; letter-spacing: 1px; margin: 20px 0; }
+.login-companion { justify-content: center; }
+.login-main form { display: grid; gap: 12px; }
+.login-main label { font-size: 12px; }
+.login-main input, .login-main button { width: 100%; min-height: 44px; padding: 10px; border: 1px solid var(--term-dim); background: var(--term-bg); color: var(--term-green); font: inherit; font-size: 14px; border-radius: 0; }
+.login-main input { user-select: text; }
+.login-main button { cursor: pointer; border-color: var(--term-green); }
+.login-main button:hover { background: rgba(0,255,136,.1); }
+.login-main :focus-visible { outline: 2px solid var(--term-cyan); outline-offset: 3px; }

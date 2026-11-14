@@ -1,0 +1,98 @@
+/* Narrow local presentation controls; upstream sprite bytes/filter stay intact.
+ * Palette follows upstream neon bounce colors; ORIGINAL inherits the terminal.
+ * No face swapping, sleep status, synthetic needs or global theme mutation. */
+/* Reserve space in the existing sprite row, including the largest zoom. */
+body[data-web-mode="true"] .terminal-container:has(.rg-interactions-host) {
+  --tama-h: max(144px, 20vh);
+}
+body[data-web-mode="true"] .rg-interactions-host {
+  position: relative;
+  padding-bottom: 34px;
+  min-height: 144px;
+  box-sizing: border-box;
+  cursor: default;
+}
+body[data-web-mode="true"] .rg-interactions-pet {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 1 auto;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  transform: scale(var(--rg-interactions-scale, 1));
+  transform-origin: center;
+  -webkit-tap-highlight-color: transparent;
+}
+.rg-interactions-pet[data-zoom="75"] { --rg-interactions-scale: .75; }
+.rg-interactions-pet[data-zoom="125"] { --rg-interactions-scale: 1.25; }
+/* Inherit these two existing filter variables only within the sprite wrapper. */
+.rg-interactions-pet[data-color="red"] { --sprite-hue: -40deg; --term-green: #ff3344; }
+.rg-interactions-pet[data-color="cyan"] { --sprite-hue: 140deg; --term-green: #00ffff; }
+.rg-interactions-pet[data-color="green"] { --sprite-hue: 80deg; --term-green: #39ff14; }
+.rg-interactions-pet[data-color="purple"] { --sprite-hue: 240deg; --term-green: #bf00ff; }
+.rg-interactions-pet[data-color="amber"] { --sprite-hue: 0deg; --term-green: #ffd700; }
+.rg-interactions-motion {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transform-origin: center bottom;
+  animation: rg-interactions-breathe 4s ease-in-out infinite;
+}
+.rg-interactions-motion[data-greeting="true"] { animation: rg-interactions-greet 480ms ease-out; }
+.rg-interactions-motion[data-paused="true"] { animation: none; }
+.rg-interactions-controls {
+  position: absolute;
+  bottom: 3px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+body[data-web-mode="true"] .rg-interactions-controls > * {
+  box-sizing: border-box;
+  min-height: 26px;
+  min-width: 26px;
+  max-width: 100%;
+  padding: 2px 4px;
+  border: 1px solid var(--term-dim);
+  border-radius: 0;
+  background: var(--term-bg, #0a0a0a);
+  color: var(--term-green);
+  font-family: var(--font-mono, monospace);
+  font-size: 10px;
+  line-height: 20px;
+  cursor: pointer;
+}
+.rg-interactions-controls > *:hover,
+.rg-interactions-pause[aria-pressed="true"] { border-color: var(--term-green); }
+.rg-interactions-pet:focus-visible,
+.rg-interactions-controls > *:focus-visible {
+  outline: 2px solid var(--term-cyan, #00ffff);
+  outline-offset: 2px;
+}
+.rg-interactions-pet:active { outline: 1px solid var(--term-green); }
+@keyframes rg-interactions-breathe {
+  0%, 100% { transform: translateY(0) scaleY(1); }
+  50% { transform: translateY(-1px) scaleY(1.025); }
+}
+@keyframes rg-interactions-greet {
+  0%, 100% { transform: translateY(0) rotate(0); }
+  35% { transform: translateY(-3px) rotate(-3deg); }
+  70% { transform: translateY(-1px) rotate(2deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rg-interactions-motion { animation: none !important; transform: none !important; }
+  .rg-interactions-pet, .rg-interactions-controls > * { transition: none !important; }
+}
+@media (pointer: coarse) {
+  body[data-web-mode="true"] .rg-interactions-controls > * { font-size: 16px; min-height: 32px; }
+  body[data-web-mode="true"] .rg-interactions-host { padding-bottom: 40px; min-height: 144px; }
+}
