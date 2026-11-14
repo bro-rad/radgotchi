@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Radgotchi monitoring login</title>
+  <link rel="stylesheet" href="/src/styles/chat-window.css">
+  <link rel="stylesheet" href="/src/styles/monitoring-login.css">
+</head>
+<body class="monitoring-login">
+  <div class="terminal-container">
+    <header class="terminal-header">
+      <div class="header-left"><span class="classification">RB//WR</span><span class="terminal-title">RAD TERMINAL</span></div>
+      <span class="login-state">LOCKED</span>
+    </header>
+    <div class="info-bar">MONITORING // READ ONLY</div>
+    <main class="login-main">
+      <div class="message-wrapper assistant login-companion" aria-hidden="true">
+        <div class="message-avatar sprite-avatar"><img src="/assets/gotchi/AWAKE.png" alt=""></div>
+      </div>
+      <h1>Monitoring login</h1>
+      <form method="post" action="/login">
+        <label for="token">Access token</label>
+        <input id="token" type="password" name="token" autocomplete="off" required maxlength="128" spellcheck="false" autocapitalize="none">
+        <button type="submit">Sign in</button>
+      </form>
+    </main>
+  </div>
+</body>
+</html>

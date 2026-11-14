@@ -1,0 +1,9 @@
+{
+  "name": "radgotchi.public.dappnode.eth",
+  "version": "0.1.5",
+  "links": {"ui": "https://radgotchi.quantumtekh.com"},
+  "description": "Read-only Radgotchi package-status companion. Authenticated HTTPS setup required.",
+  "type": "service",
+  "author": "Radgotchi contributors",
+  "license": "MIT"
+}

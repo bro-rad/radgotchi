@@ -1,0 +1,37 @@
+/* Narrow adapter layout; original chat-window.css owns all arcade visuals/art. */
+#companion-arcade { grid-area: arcade; min-width: 0; width: 100%; }
+body[data-web-mode="true"] .terminal-container {
+  overflow-y: auto;
+  grid-template-rows: auto auto auto minmax(144px, var(--tama-h, 20vh)) minmax(100px, 1fr) auto auto auto auto;
+  grid-template-areas: "header header header" "info info info" "level level level" "needs sprite stats" "network network network" "activities activities activities" "arcade arcade arcade" "status status status" "ctrls ctrls ctrls";
+}
+@media (max-width: 340px) {
+ body[data-web-mode="true"] .terminal-container {
+  grid-template-rows: auto auto auto auto minmax(144px, 12vh) minmax(100px, 1fr) auto auto auto auto;
+  grid-template-areas: "header header" "info info" "level level" "needs stats" "sprite sprite" "network network" "activities activities" "arcade arcade" "status status" "ctrls ctrls";
+ }
+}
+.rg-arcade { min-width: 0; }
+.rg-arcade > .arcade-title,
+.rg-arcade > .arcade-stats-mini,
+.rg-arcade > .cf-result,
+.rg-arcade > .inventory-empty { padding: 4px 10px; }
+/* Upstream hides header mini-stats on phones; these are the actual economy. */
+body[data-web-mode="true"] .rg-arcade .arcade-stats-mini { display: flex; font-size: 10px; }
+.rg-arcade .arcade-stats-mini,
+.rg-arcade .bj-hand { flex-wrap: wrap; }
+.rg-arcade .arcade-games { max-height: none; }
+.rg-arcade .game-row { flex-wrap: wrap; }
+.rg-arcade .game-btn:focus-visible,
+.rg-arcade .game-bet-input:focus-visible {
+  outline: 2px solid var(--term-green);
+  outline-offset: 2px;
+}
+.rg-arcade > .game-btn { margin: 4px 10px; }
+.rg-arcade [role="status"] { overflow-wrap: anywhere; }
+@media (prefers-reduced-motion: reduce) {
+  .rg-arcade *, .rg-arcade *::before, .rg-arcade *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

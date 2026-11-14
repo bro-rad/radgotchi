@@ -1,0 +1,26 @@
+version: "3.5"
+services:
+  radgotchi:
+    image: radgotchi.radgotchi.public.dappnode.eth:0.1.5
+    build:
+      context: ..
+      dockerfile: packaging/Dockerfile
+    restart: "no"
+    user: "1000:1000"
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      RADGOTCHI_MONITORING_MODE: "1"
+      RADGOTCHI_MONITORING_HOST: "0.0.0.0"
+      RADGOTCHI_MONITORING_PORT: "3000"
+      RADGOTCHI_MONITORING_ORIGIN: ""
+      RADGOTCHI_MONITORING_TOKEN: ""
+      RADGOTCHI_MONITORING_INVENTORY_URL: ""
+    volumes:
+      - companion:/data/companion
+    expose:
+      - "3000"
+volumes:
+  companion: {}
